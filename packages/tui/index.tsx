@@ -18,6 +18,17 @@ export { loadSettings, saveSettings } from "./lib/settings";
 export { fetchAvailableModels } from "./lib/fetch-models";
 export type { ModelInfo } from "./lib/models";
 
+// Session persistence exports
+export {
+  createSession,
+  saveSession,
+  listSessions,
+  loadSession,
+  formatTimeAgo,
+  encodeProjectPath,
+} from "./lib/session-storage";
+export type { SessionListItem, SessionData } from "./lib/session-types";
+
 /**
  * Create a Claude Code-style TUI.
  *
@@ -52,6 +63,8 @@ export async function createTUI(options: TUIOptions): Promise<void> {
   const workingDirectory =
     options.workingDirectory ?? options.sandbox?.workingDirectory;
 
+  const projectPath = options.projectPath ?? workingDirectory;
+
   const { waitUntilExit } = render(
     <ChatProvider
       agentOptions={agentOptions}
@@ -61,6 +74,8 @@ export async function createTUI(options: TUIOptions): Promise<void> {
       initialSettings={options.initialSettings}
       onSettingsChange={options.onSettingsChange}
       availableModels={options.availableModels}
+      projectPath={projectPath}
+      currentBranch={options.currentBranch}
     >
       <ReasoningProvider>
         <ExpandedViewProvider>
@@ -90,6 +105,8 @@ export function renderTUI(options: TUIOptions) {
   const workingDirectory =
     options.workingDirectory ?? options.sandbox?.workingDirectory;
 
+  const projectPath = options.projectPath ?? workingDirectory;
+
   return render(
     <ChatProvider
       agentOptions={agentOptions}
@@ -99,6 +116,8 @@ export function renderTUI(options: TUIOptions) {
       initialSettings={options.initialSettings}
       onSettingsChange={options.onSettingsChange}
       availableModels={options.availableModels}
+      projectPath={projectPath}
+      currentBranch={options.currentBranch}
     >
       <ReasoningProvider>
         <ExpandedViewProvider>

@@ -1,4 +1,5 @@
 import {
+  generateId,
   type ChatTransport,
   type LanguageModelUsage,
   convertToModelMessages,
@@ -14,6 +15,14 @@ import type {
 } from "./types";
 import type { Settings } from "./lib/settings";
 import { getModelById } from "./lib/models";
+import { createSession, saveSession } from "./lib/session-storage";
+
+export type PersistenceConfig = {
+  getSessionId: () => string | null;
+  projectPath: string;
+  getBranch: () => string;
+  onSessionCreated: (id: string) => void;
+};
 
 export type AgentTransportOptions = {
   agent: TUIAgent;
@@ -22,6 +31,7 @@ export type AgentTransportOptions = {
   getApprovalRules?: () => ApprovalRule[];
   getSettings?: () => Settings;
   onUsageUpdate?: (usage: LanguageModelUsage) => void;
+  persistence?: PersistenceConfig;
 };
 
 export function createAgentTransport({
@@ -31,6 +41,7 @@ export function createAgentTransport({
   getApprovalRules,
   getSettings,
   onUsageUpdate,
+  persistence,
 }: AgentTransportOptions): ChatTransport<TUIAgentUIMessage> {
   return {
     sendMessages: async ({ messages, abortSignal }) => {
@@ -91,10 +102,14 @@ export function createAgentTransport({
           // Ignore errors from aborted requests
         });
 
+      // Track session ID locally so we can update it after creation
+      let currentSessionId = persistence?.getSessionId() ?? null;
       // Track last step usage for message metadata
       let lastStepUsage: LanguageModelUsage | undefined;
 
       return result.toUIMessageStream<TUIAgentUIMessage>({
+        originalMessages: messages,
+        generateMessageId: generateId,
         messageMetadata: ({ part }) => {
           // Track per-step usage from finish-step events. The last step's input
           // tokens represents actual context window utilization.
@@ -105,6 +120,33 @@ export function createAgentTransport({
           // On finish, include both the last step usage and total message usage
           if (part.type === "finish") {
             return { lastStepUsage, totalMessageUsage: part.totalUsage };
+          }
+        },
+        onFinish: async ({ messages: allMessages }) => {
+          if (!persistence) return;
+
+          try {
+            // Get current branch at save time
+            const branch = persistence.getBranch();
+
+            // Create session if needed
+            if (!currentSessionId) {
+              currentSessionId = await createSession(
+                persistence.projectPath,
+                branch,
+              );
+              persistence.onSessionCreated(currentSessionId);
+            }
+
+            // Save all messages (overwrites file)
+            await saveSession(
+              persistence.projectPath,
+              currentSessionId,
+              branch,
+              allMessages,
+            );
+          } catch {
+            // Ignore persistence errors
           }
         },
       });
