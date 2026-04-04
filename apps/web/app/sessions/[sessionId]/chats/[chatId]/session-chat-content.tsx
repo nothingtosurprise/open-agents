@@ -1986,7 +1986,9 @@ export function SessionChatContent({
       status === "ready" &&
       isMountedRef.current
     ) {
-      markAutoCommitStarted();
+      if (!userStopped) {
+        markAutoCommitStarted();
+      }
 
       const refreshCompletedTurnState = async () => {
         await requestStatusSync("force").catch(() => undefined);
@@ -2028,6 +2030,7 @@ export function SessionChatContent({
     session.repoOwner,
     session.repoName,
     markAutoCommitStarted,
+    userStopped,
   ]);
 
   // Track whether we've auto-attempted sandbox startup for this page load.
