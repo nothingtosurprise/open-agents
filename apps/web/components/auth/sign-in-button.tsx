@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, type ComponentProps } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect, type ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 
 function VercelIcon({ className }: { className?: string }) {
@@ -14,6 +13,23 @@ function VercelIcon({ className }: { className?: string }) {
     >
       <path d="M12 1L24 22H0L12 1Z" />
     </svg>
+  );
+}
+
+function LoadingDots() {
+  const [dotCount, setDotCount] = useState(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDotCount((prev) => (prev % 3) + 1);
+    }, 400);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span className="inline-flex w-[1.5ch] text-left">
+      {".".repeat(dotCount)}
+    </span>
   );
 }
 
@@ -55,12 +71,11 @@ export function SignInButton({
 
   return (
     <Button {...props} disabled={disabled || isLoading} onClick={handleSignIn}>
-      {isLoading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <VercelIcon className="mr-2 h-4 w-4" />
-      )}
-      {isLoading ? "Signing in…" : "Sign in with Vercel"}
+      <VercelIcon className="mr-2 h-4 w-4" />
+      Sign in with Vercel
+      <span className="inline-block w-[1.5ch] text-left">
+        {isLoading && <LoadingDots />}
+      </span>
     </Button>
   );
 }
