@@ -373,7 +373,7 @@ export async function getChatSummariesBySessionId(
       and(eq(chatReads.chatId, chats.id), eq(chatReads.userId, userId)),
     )
     .where(eq(chats.sessionId, sessionId))
-    .orderBy(desc(chats.updatedAt), desc(chats.createdAt));
+    .orderBy(chats.createdAt);
 
   return rows;
 }

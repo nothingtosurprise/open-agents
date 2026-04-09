@@ -506,14 +506,14 @@ export function useSessionChats(
     void mutate(
       (current) =>
         toChatsResponse(current, [
+          ...(current?.chats ?? []).filter(
+            (chat) => chat.id !== optimisticChat.id,
+          ),
           {
             ...optimisticChat,
             hasUnread: false,
             isStreaming: false,
           },
-          ...(current?.chats ?? []).filter(
-            (chat) => chat.id !== optimisticChat.id,
-          ),
         ]),
       { revalidate: false },
     );
